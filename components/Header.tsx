@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Download, Play, Zap, Terminal } from "lucide-react";
+import { Download, Play, Zap, Terminal, Github } from "lucide-react";
 import { useSimulationStore } from "@/store/simulationStore";
 import { useWasm } from "@/hooks/useWasm";
 import { useToast } from "@/hooks/useToast";
@@ -107,12 +107,21 @@ export function Header() {
 				</div>
 				<div>
 					<h1 className="text-xl font-bold bg-linear-to-r from-cyan-400 to-pink-400 bg-clip-text text-transparent">
-						TM-Lang Playground
+						TM-Lang
 					</h1>
 					<p className="text-xs text-zinc-500">
 						Turing Machine Live Editor
 					</p>
 				</div>
+				<a
+					href="https://github.com/Mystery-Coder/TM-Lang"
+					target="_blank"
+					rel="noopener noreferrer"
+					className="ml-2 text-zinc-400 hover:text-zinc-100 transition-colors"
+					title="View on GitHub"
+				>
+					<Github size={20} strokeWidth={1.75} />
+				</a>
 			</div>
 
 			<div className="flex items-center gap-3">
