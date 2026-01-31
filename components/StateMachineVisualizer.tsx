@@ -283,8 +283,7 @@ function styleDotForDarkTheme(dot: string): string {
 
 	// Insert dark theme attributes after the digraph declaration
 	const graphAttrs = `
-    graph [bgcolor="transparent" fontcolor="#e4e4e7" fontname="monospace"];
-    node [style="filled" fillcolor="#18181b" color="#06b6d4" fontcolor="#e4e4e7" fontname="monospace"];
+    node [style="filled" color="#06b6d4" fontcolor="#e4e4e7" fontname="monospace"];
     edge [color="#06b6d4" fontcolor="#a1a1aa" fontname="monospace"];
   `;
 

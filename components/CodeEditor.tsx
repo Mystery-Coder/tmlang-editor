@@ -3,6 +3,11 @@
 import dynamic from "next/dynamic";
 import { useSimulationStore } from "@/store/simulationStore";
 
+import { useWasm } from "@/hooks/useWasm";
+import { useToast } from "@/hooks/useToast";
+import type { editor } from "monaco-editor";
+import { useCallback, useRef, useEffect } from "react";
+
 // Monaco must be loaded client-side only
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 	ssr: false,
@@ -14,7 +19,81 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
 });
 
 export function CodeEditor() {
-	const { sourceCode, setSourceCode } = useSimulationStore();
+	const {
+		sourceCode,
+		setSourceCode,
+		tapeInput,
+		setCompileResult,
+		setSimulationResult,
+		setCurrentStep,
+	} = useSimulationStore();
+
+	const { isReady, compile, run } = useWasm();
+	const { toast } = useToast();
+
+	// Use a ref to store the compile and run function so Monaco can always access the latest
+	const compileAndRunRef = useRef<() => void>(() => {});
+
+	// Update the ref whenever dependencies change
+	useEffect(() => {
+		compileAndRunRef.current = () => {
+			if (!isReady) {
+				toast({
+					title: "WASM Not Ready",
+					description: "Wait for WASM to load",
+					variant: "destructive",
+				});
+				return;
+			}
+
+			const compileResult = compile(sourceCode);
+			setCompileResult(compileResult);
+
+			if (compileResult?.status === "error") {
+				toast({
+					title: "Compilation Error",
+					description: compileResult.error,
+					variant: "destructive",
+				});
+				return;
+			}
+
+			const result = run(sourceCode, tapeInput);
+			setSimulationResult(result);
+			setCurrentStep(0);
+
+			if (result?.status === "error") {
+				toast({
+					title: "Simulation Error",
+					description: "Failed to run simulation",
+					variant: "destructive",
+				});
+			} else {
+				toast({
+					title: `Simulation Complete: ${result?.status}`,
+					description: `Total steps: ${result?.history.length || 0}`,
+					variant:
+						result?.status === "ACCEPTED" ? "success" : "default",
+				});
+			}
+		};
+	}, [isReady, sourceCode, tapeInput]);
+
+	const MonacoMount = (editor: editor.IStandaloneCodeEditor) => {
+		editor.addAction({
+			id: "compile-and-run-on-save",
+			label: "Compiles and Runs sim on ctrl+s",
+			keybindings: [
+				// Monaco.KeyMod.CtrlCmd | Monaco.KeyCode.KeyS
+				// CtrlCmd = 2048, KeyS = 49
+				2048 | 49,
+			],
+			run: () => {
+				// Call through the ref to always get the latest function
+				compileAndRunRef.current();
+			},
+		});
+	};
 
 	return (
 		<div className="w-full h-full flex flex-col">
@@ -31,6 +110,7 @@ export function CodeEditor() {
 					theme="vs-dark"
 					value={sourceCode}
 					onChange={(value) => setSourceCode(value || "")}
+					onMount={MonacoMount}
 					options={{
 						minimap: { enabled: false },
 						fontSize: 14,
