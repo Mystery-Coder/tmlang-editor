@@ -1,13 +1,25 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSimulationStore } from "@/store/simulationStore";
+import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { Eye, Crosshair } from "lucide-react";
 
 export function TapeVisualizer() {
 	const { simulationResult, currentStep } = useSimulationStore();
+	const [viewOffset, setViewOffset] = useState(0);
+	const [followHead, setFollowHead] = useState(true);
 
 	const currentState = simulationResult?.history[currentStep];
+
+	// Reset view offset when following head or when simulation changes
+	useEffect(() => {
+		if (followHead && currentState) {
+			setViewOffset(currentState.head);
+		}
+	}, [followHead, currentState?.head, currentStep]);
 
 	if (!currentState) {
 		return (
@@ -40,24 +52,20 @@ export function TapeVisualizer() {
 	const tape = currentState.tape;
 	const headIndex = currentState.head;
 
-	// Ensure we have cells to display (pad if necessary)
-	const displayTape = tape
-		.padStart(Math.max(tape.length, 15), "_")
-		.padEnd(20, "_");
-	const adjustedHead =
-		headIndex +
-		(displayTape.length -
-			tape.length -
-			(tape.length - headIndex - (tape.length - tape.length)));
-
-	// Center the tape around the head
+	// Calculate visible cells
 	const visibleCells = 15;
 	const halfVisible = Math.floor(visibleCells / 2);
-	let startIndex = Math.max(0, headIndex - halfVisible);
+
+	// Use viewOffset as center point (either following head or manual)
+	const centerIndex = followHead ? headIndex : viewOffset;
+	let startIndex = Math.max(0, centerIndex - halfVisible);
 	let endIndex = startIndex + visibleCells;
 
-	if (endIndex > tape.length) {
-		endIndex = tape.length;
+	// Extend tape display range to allow viewing beyond current tape
+	const extendedTapeLength = Math.max(tape.length + 10, 20);
+
+	if (endIndex > extendedTapeLength) {
+		endIndex = extendedTapeLength;
 		startIndex = Math.max(0, endIndex - visibleCells);
 	}
 
@@ -78,6 +86,16 @@ export function TapeVisualizer() {
 			isHead: false,
 		});
 	}
+
+	const handleViewSliderChange = (value: number[]) => {
+		setFollowHead(false);
+		setViewOffset(value[0]);
+	};
+
+	const handleFollowHeadToggle = () => {
+		setFollowHead(true);
+		setViewOffset(headIndex);
+	};
 
 	return (
 		<div className="flex flex-col items-center py-4 px-4">
@@ -139,7 +157,42 @@ export function TapeVisualizer() {
 
 			{/* Tape Position Indicator */}
 			<div className="mt-2 text-xs text-zinc-500 font-mono">
-				Position: {headIndex} / {tape.length - 1}
+				Head Position: {headIndex} / {tape.length - 1}
+			</div>
+
+			{/* Tape View Slider */}
+			<div className="mt-4 w-full max-w-md px-4">
+				<div className="flex items-center justify-between mb-2">
+					<div className="flex items-center gap-2">
+						<Eye className="w-4 h-4 text-zinc-500" />
+						<span className="text-xs text-zinc-500">Tape View</span>
+					</div>
+					<button
+						onClick={handleFollowHeadToggle}
+						className={cn(
+							"flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-all",
+							followHead
+								? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+								: "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700",
+						)}
+					>
+						<Crosshair className="w-3 h-3" />
+						{followHead ? "Following Head" : "Follow Head"}
+					</button>
+				</div>
+				<Slider
+					value={[followHead ? headIndex : viewOffset]}
+					onValueChange={handleViewSliderChange}
+					min={0}
+					max={extendedTapeLength - 1}
+					step={1}
+					className="w-full"
+				/>
+				<div className="flex justify-between mt-1 text-xs text-zinc-600 font-mono">
+					<span>0</span>
+					<span>Viewing: {followHead ? headIndex : viewOffset}</span>
+					<span>{extendedTapeLength - 1}</span>
+				</div>
 			</div>
 		</div>
 	);
