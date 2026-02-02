@@ -5,6 +5,7 @@ import { Download, Play, Zap, Terminal, Github } from "lucide-react";
 import { useSimulationStore } from "@/store/simulationStore";
 import { useWasm } from "@/hooks/useWasm";
 import { useToast } from "@/hooks/useToast";
+import Link from "next/link";
 
 export function Header() {
 	const { toast } = useToast();
@@ -122,6 +123,11 @@ export function Header() {
 				>
 					<Github size={20} strokeWidth={1.75} />
 				</a>
+				<div>
+					<h1 className="text-xl font-bold text-amber-300">
+						<Link href={"/examples"}>Examples</Link>
+					</h1>
+				</div>
 			</div>
 
 			<div className="flex items-center gap-3">
